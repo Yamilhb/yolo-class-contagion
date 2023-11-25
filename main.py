@@ -1,0 +1,156 @@
+import cv2 as cv
+from ultralytics import YOLO
+from ultralytics.utils.plotting import Annotator
+import sys
+import numpy as np
+import os
+from datetime import datetime
+import time
+# Permitamos a opencv a usar la GPU
+os.environ['OPENCV_DNN_OPENCL_ALLOW_ALL_DEVICES'] = '1'
+
+milisegundos = int(sys.argv[1])
+cls_tg = float(sys.argv[2])
+prueba = sys.argv[3]
+
+
+
+def main():
+    video = cv.VideoCapture(0)
+    frame_width = int(video.get(cv.CAP_PROP_FRAME_WIDTH))
+    frame_height = int(video.get(cv.CAP_PROP_FRAME_HEIGHT))
+
+    model = YOLO('yolov8n.pt')  # load an official model
+    model.to('cuda')
+
+    fourcc  = cv.VideoWriter_fourcc(*'XVID') 
+    out = cv.VideoWriter(f'resultados/prueba{prueba}.avi',fourcc,(1000/milisegundos),(frame_width,frame_height), True)
+###########    
+    nframe = 0
+    ntarget = 0
+    nnotarget = 0
+    id_sospechoso = None
+    grabando = False
+    tiempo_archivo = 0
+    t_inicio = time.time()
+    nombre_archivo = None
+###########
+    while True:
+        print('\n\n'+'-+'*15)
+        if (not grabando)and (tiempo_archivo>3):
+            print('1------>',f'{nombre_archivo}.avi','<------')
+            print('111111:',os.listdir('resultados/'))
+            if f'{nombre_archivo}.avi' in os.listdir('resultados/'):
+                os.remove(f'resultados/{nombre_archivo}.avi')
+            nombre_archivo = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            print('2------>',nombre_archivo,'<------')
+            print('222222:',os.listdir('resultados/'))
+            out_archivo = cv.VideoWriter(f'resultados/{nombre_archivo}.avi',fourcc,(1000/milisegundos),(frame_width,frame_height))
+            tiempo_archivo = 0
+            t_inicio = time.time()
+        elif grabando:
+            out_archivo.write(frame)
+            
+            if id_sospechoso is None:
+                out_archivo.release()
+                nombre_archivo = None
+                tiempo_archivo = 3.1
+                grabando = False
+        elif tiempo_archivo<=3:
+            tiempo_archivo = time.time()-t_inicio
+
+        _, frame = video.read()
+        results = model.track(frame, conf=0.5, save=False, show=False)
+                
+
+        print(f'\nFRAME: {nframe}')
+
+        for r in results:
+
+            annotator = Annotator(frame)
+
+            lista_humanos = ((r.boxes.cls == 0.).nonzero()).flatten()
+
+            b = r.boxes.xyxy[lista_humanos]
+            #c = r.boxes.cls[lista_humanos]
+
+            for h in b:
+                
+               annotator.box_label(h, 'Humano', color=(255, 0, 0))
+    
+            #print(f"   ATENTI, lista_humanos, r.boxes.id: {r.boxes.id}")
+
+
+            #print(f"\n\n  Atributos:\n----------\n   - ID: {r.boxes}")
+            
+            # Se detecta el evento?
+            if cls_tg in r.boxes.cls:                
+                # Buscamos posición del sospechoso.
+                lista_tgs = ((r.boxes.cls == cls_tg).nonzero()).flatten()
+                # Localizamos el centroide de la target (Para después asociarlo al humano con centroide más cercano).
+                centroide_tg = r.boxes.xywh[lista_tgs][0][:2]
+                ntarget +=1
+            
+            # El evento no se detecta en este frame pero sí en los anteriores (se está produciendo el evento).
+            if ((cls_tg not in r.boxes.cls)and (ntarget>0)):
+                ntarget +=1
+                nnotarget +=1
+            
+            # El evento termina de producirse: 
+            #   - Se busca al causante del evento y se registra su id.
+            if (ntarget==3):
+                print('TENEMOS MECHERO:\n'+'-'*15)
+                print(f'  -  POSITION SUSPECT: {lista_tgs}')
+                # Fijamos el ID del sospechoso.
+                distancias_h_tg = np.array([[x[0],
+                                    np.linalg.norm(centroide_tg-x[1][:2])]
+                                      for x in zip(r.boxes.id[lista_humanos],r.boxes.xywh[lista_humanos])])
+                distancias_h_tg_aux = np.array([[np.linalg.norm(centroide_tg-x[1][:2])]
+                                      for x in zip(r.boxes.id[lista_humanos],r.boxes.xywh[lista_humanos])])
+                print(f'  -  DISTANCIAS HUMANO/ACTO: {distancias_h_tg} -- {distancias_h_tg_aux}')
+                posicion_minima = np.argmin(distancias_h_tg[:,1])
+                id_sospechoso = distancias_h_tg[posicion_minima][0]
+            
+            # El evento ya pasó, reseteo las variables que corresponde.
+            if nnotarget>=3:
+                ntarget = 0
+                nnotarget = 0
+                lista_tgs = None
+                centroide_tg = None
+                distancias_h_tg = None
+                posicion_minima = None
+                #id_sospechoso = None
+
+            # Se busca al sospechoso y se graba la parte del video donde se captura el evento.
+            if id_sospechoso is not None:
+                if (r.boxes.id is not None)and ((r.boxes.id == id_sospechoso).sum())>0:
+                    marca = 0
+                    print('BUSCAMOS MECHERO:\n'+'-'*15)
+                    print(f'  -  ID SUSPECT: {id_sospechoso}')
+                    print(f'  -  TODOS LOS ID: {r.boxes.id}')
+                    cajon_sospechoso = r.boxes.xyxy[((r.boxes.id == id_sospechoso).nonzero()).flatten()]
+                    print(f'  -  BOUND SUSPECT: {cajon_sospechoso}')
+                    annotator.box_label(r.boxes.xyxy[0], 'REPTILIANO',color = (0, 0, 255))
+                    grabando = True
+                else:
+                    marca +=1
+                    if marca >= (1000//milisegundos): # 'marca' nos indica los frame que lleva fuera de imagen el suspect
+                        id_sospechoso = None # Si lleva más de 1 segundo, lo borramos.
+ 
+        nframe += 1
+        frame = annotator.result()
+
+        
+        out.write(frame)
+        cv.imshow('YoL0v8',frame)
+        if cv.waitKey(milisegundos)& 0xFF==ord('q'): # El video está a 30 frames por segundo.
+            break
+
+    # RELEASE MEMORY
+    ################
+    out.release()
+    video.release()
+    cv.destroyAllWindows()
+
+if __name__=='__main__':
+    main()
