@@ -34,6 +34,7 @@ def main():
     tiempo_archivo = 0
     t_inicio = time.time()
     nombre_archivo = None
+    indi = None
 ###########
     while True:
         #print(f'\nFRAME: {nframe}')
@@ -53,7 +54,8 @@ def main():
 #            out_archivo.write(frame) 
             tiempo_archivo = 0
             t_inicio = time.time()
-        elif grabando and (id_sospechoso is None):
+            indi=1
+        elif grabando and (id_sospechoso is None) and indi==1:
             out_archivo.release()
             del(out_archivo)
             nombre_archivo = None
@@ -93,7 +95,7 @@ def main():
 
             for h in b:
                 
-               annotator.box_label(h, 'Android', color=(255, 0, 0))
+               annotator.box_label(h, f'Android -- fr {nframe}', color=(255, 0, 0))
     
             #print(f"   ATENTI, lista_humanos, r.boxes.id: {r.boxes.id}")
 
@@ -127,6 +129,7 @@ def main():
 #                print(f'  -  DISTANCIAS HUMANO/ACTO: {distancias_h_tg} -- {distancias_h_tg_aux}')
                 posicion_minima = np.argmin(distancias_h_tg[:,1])
                 id_sospechoso = distancias_h_tg[posicion_minima][0]
+                print('CULPABLE EEEEEEEEEEEEEES: ', id_sospechoso, '--', r.boxes.cls[int(id_sospechoso)-1])
             
             # El evento ya pasó, reseteo las variables que corresponde.
             if nnotarget>=3:
@@ -139,16 +142,19 @@ def main():
                 #id_sospechoso = None
 
             # Se busca al sospechoso y se graba la parte del video donde se captura el evento.
+            print('SSSSSSSOOOOOSSSSSS: ',id_sospechoso)
+            print('RRRRRRRRR BOOOOOOXESSSS: ',r.boxes.id )
             if id_sospechoso is not None:
-                if (r.boxes.id is not None)and ((r.boxes.id == id_sospechoso).sum())>0:
+                if (r.boxes.id is not None)and (((r.boxes.id == id_sospechoso).sum())>0) and (0. in r.boxes.cls):
                     marca = 0
                     # print('BUSCAMOS MECHERO:\n'+'-'*15)
                     # print(f'  -  ID SUSPECT: {id_sospechoso}')
                     # print(f'  -  TODOS LOS ID: {r.boxes.id}')
-                    # cajon_sospechoso = r.boxes.xyxy[((r.boxes.id == id_sospechoso).nonzero()).flatten()]
+                    # cajon_sospechoso = list(r.boxes.xyxy[((r.boxes.id == id_sospechoso).nonzero()).flatten()])
                     # clase = r.boxes.cls[((r.boxes.id == id_sospechoso).nonzero()).flatten()]
                     # print(f'  -  BOUND SUSPECT: {cajon_sospechoso}')
-                    annotator.box_label(r.boxes.xyxy[0], f'Contagied by a {r.names[int(cls_tg)]}',color = (0, 0, 255))
+                    for h in b:
+                        annotator.box_label(h, f'Contagion by a {r.names[int(cls_tg)]}',color = (0, 0, 255))
                     grabando = True
                 else:
                     marca +=1
