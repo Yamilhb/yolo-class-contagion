@@ -12,7 +12,7 @@ os.environ['OPENCV_DNN_OPENCL_ALLOW_ALL_DEVICES'] = '1'
 milisegundos = int(sys.argv[1])
 cls_tg = float(sys.argv[2])
 prueba = sys.argv[3]
-
+tiempo_reinicio_video = 3 # Segundos que tienen que transcurrir para que el video que captura el momento se reinicie si no ha capturado nada.
 
 
 def main():
@@ -36,33 +36,49 @@ def main():
     nombre_archivo = None
 ###########
     while True:
-        print(f'\nFRAME: {nframe}')
-        print('\n\n'+'-+'*15)
-        if (not grabando)and (tiempo_archivo>3):
+        #print(f'\nFRAME: {nframe}')
+        print('\n\n'+'-+'*15,f'FRAME: {nframe}',f"   HORA: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        if (not grabando)and (tiempo_archivo>tiempo_reinicio_video):
             print('1------>',f'{nombre_archivo}.mp4','<------')
             print('111111:',os.listdir('resultados/'))
             if f'{nombre_archivo}.mp4' in os.listdir('resultados/'):
+                if 'out_archivo' in locals() or 'out_archivo' in globals():
+                    out_archivo.release()
+                    del(out_archivo)
                 os.remove(f'resultados/{nombre_archivo}.mp4')
             nombre_archivo = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             print('2------>',nombre_archivo,'<------')
             print('222222:',os.listdir('resultados/'))
             out_archivo = cv.VideoWriter(f'resultados/{nombre_archivo}.mp4',fourcc,(1000/milisegundos),(frame_width,frame_height))
+#            out_archivo.write(frame) 
             tiempo_archivo = 0
             t_inicio = time.time()
-        elif grabando:
-            print('3------>GRABANDO: ',nombre_archivo,'<------')
-            out_archivo.write(frame)
+        elif grabando and (id_sospechoso is None):
+            out_archivo.release()
+            del(out_archivo)
+            nombre_archivo = None
+            tiempo_archivo = tiempo_reinicio_video+0.1
+            grabando = False
+        # elif grabando:
+        #     print('3------>GRABANDO: ',nombre_archivo,'<------')
+        #     out_archivo.write(frame)
             
-            if id_sospechoso is None:
-                out_archivo.release()
-                nombre_archivo = None
-                tiempo_archivo = 3.1
-                grabando = False
-        elif tiempo_archivo<=3:
+        #     if id_sospechoso is None:
+        #         out_archivo.release()
+        #         del(out_archivo)
+        #         nombre_archivo = None
+        #         tiempo_archivo = tiempo_reinicio_video+0.1
+        #         grabando = False
+        elif tiempo_archivo<=tiempo_reinicio_video:
             tiempo_archivo = time.time()-t_inicio
+        
+        if 'out_archivo' in locals() or 'out_archivo' in globals():
+            out_archivo.write(frame) 
 
         _, frame = video.read()
-        results = model.track(frame, conf=0.5, save=False, show=False)
+        results = model.track(frame, conf=0.6, save=False, show=False)
+
+        print('\n'+'-+'*15,f'FRAME: {nframe}')
                 
 
 
@@ -77,7 +93,7 @@ def main():
 
             for h in b:
                 
-               annotator.box_label(h, 'Humano', color=(255, 0, 0))
+               annotator.box_label(h, 'Android', color=(255, 0, 0))
     
             #print(f"   ATENTI, lista_humanos, r.boxes.id: {r.boxes.id}")
 
@@ -100,15 +116,15 @@ def main():
             # El evento termina de producirse: 
             #   - Se busca al causante del evento y se registra su id.
             if (ntarget==3):
-                print('TENEMOS MECHERO:\n'+'-'*15)
-                print(f'  -  POSITION SUSPECT: {lista_tgs}')
+                # print('TENEMOS MECHERO:\n'+'-'*15)
+                # print(f'  -  POSITION SUSPECT: {lista_tgs}')
                 # Fijamos el ID del sospechoso.
                 distancias_h_tg = np.array([[x[0],
                                     np.linalg.norm(centroide_tg-x[1][:2])]
                                       for x in zip(r.boxes.id[lista_humanos],r.boxes.xywh[lista_humanos])])
-                distancias_h_tg_aux = np.array([[np.linalg.norm(centroide_tg-x[1][:2])]
-                                      for x in zip(r.boxes.id[lista_humanos],r.boxes.xywh[lista_humanos])])
-                print(f'  -  DISTANCIAS HUMANO/ACTO: {distancias_h_tg} -- {distancias_h_tg_aux}')
+#                distancias_h_tg_aux = np.array([[np.linalg.norm(centroide_tg-x[1][:2])]
+#                                      for x in zip(r.boxes.id[lista_humanos],r.boxes.xywh[lista_humanos])])
+#                print(f'  -  DISTANCIAS HUMANO/ACTO: {distancias_h_tg} -- {distancias_h_tg_aux}')
                 posicion_minima = np.argmin(distancias_h_tg[:,1])
                 id_sospechoso = distancias_h_tg[posicion_minima][0]
             
@@ -126,12 +142,13 @@ def main():
             if id_sospechoso is not None:
                 if (r.boxes.id is not None)and ((r.boxes.id == id_sospechoso).sum())>0:
                     marca = 0
-                    print('BUSCAMOS MECHERO:\n'+'-'*15)
-                    print(f'  -  ID SUSPECT: {id_sospechoso}')
-                    print(f'  -  TODOS LOS ID: {r.boxes.id}')
-                    cajon_sospechoso = r.boxes.xyxy[((r.boxes.id == id_sospechoso).nonzero()).flatten()]
-                    print(f'  -  BOUND SUSPECT: {cajon_sospechoso}')
-                    annotator.box_label(r.boxes.xyxy[0], 'REPTILIANO',color = (0, 0, 255))
+                    # print('BUSCAMOS MECHERO:\n'+'-'*15)
+                    # print(f'  -  ID SUSPECT: {id_sospechoso}')
+                    # print(f'  -  TODOS LOS ID: {r.boxes.id}')
+                    # cajon_sospechoso = r.boxes.xyxy[((r.boxes.id == id_sospechoso).nonzero()).flatten()]
+                    # clase = r.boxes.cls[((r.boxes.id == id_sospechoso).nonzero()).flatten()]
+                    # print(f'  -  BOUND SUSPECT: {cajon_sospechoso}')
+                    annotator.box_label(r.boxes.xyxy[0], f'Contagied by a {r.names[int(cls_tg)]}',color = (0, 0, 255))
                     grabando = True
                 else:
                     marca +=1
