@@ -23,8 +23,8 @@ def main():
     model = YOLO('yolov8n.pt')  # load an official model
     model.to('cuda')
 
-    fourcc  = cv.VideoWriter_fourcc(*'XVID') 
-    out = cv.VideoWriter(f'resultados/prueba{prueba}.avi',fourcc,(1000/milisegundos),(frame_width,frame_height), True)
+    fourcc  = cv.VideoWriter_fourcc(*'MP4V') 
+    out = cv.VideoWriter(f'resultados/prueba{prueba}.mp4',fourcc,(1000/milisegundos),(frame_width,frame_height), True)
 ###########    
     nframe = 0
     ntarget = 0
@@ -36,19 +36,21 @@ def main():
     nombre_archivo = None
 ###########
     while True:
+        print(f'\nFRAME: {nframe}')
         print('\n\n'+'-+'*15)
         if (not grabando)and (tiempo_archivo>3):
-            print('1------>',f'{nombre_archivo}.avi','<------')
+            print('1------>',f'{nombre_archivo}.mp4','<------')
             print('111111:',os.listdir('resultados/'))
-            if f'{nombre_archivo}.avi' in os.listdir('resultados/'):
-                os.remove(f'resultados/{nombre_archivo}.avi')
+            if f'{nombre_archivo}.mp4' in os.listdir('resultados/'):
+                os.remove(f'resultados/{nombre_archivo}.mp4')
             nombre_archivo = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             print('2------>',nombre_archivo,'<------')
             print('222222:',os.listdir('resultados/'))
-            out_archivo = cv.VideoWriter(f'resultados/{nombre_archivo}.avi',fourcc,(1000/milisegundos),(frame_width,frame_height))
+            out_archivo = cv.VideoWriter(f'resultados/{nombre_archivo}.mp4',fourcc,(1000/milisegundos),(frame_width,frame_height))
             tiempo_archivo = 0
             t_inicio = time.time()
         elif grabando:
+            print('3------>GRABANDO: ',nombre_archivo,'<------')
             out_archivo.write(frame)
             
             if id_sospechoso is None:
@@ -63,7 +65,6 @@ def main():
         results = model.track(frame, conf=0.5, save=False, show=False)
                 
 
-        print(f'\nFRAME: {nframe}')
 
         for r in results:
 
