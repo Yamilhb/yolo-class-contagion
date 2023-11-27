@@ -16,6 +16,6 @@ The next example shows an *Android* with its bounding box, but whe 'he' take the
 <img src="https://github.com/Yamilhb/yolo-class-contagion/blob/master/resultados/gif20%3A23%3A24.gif">
 </div>
 
-This new label will persist until the man goes beyond the limits of the image. In this case, we can go to the 'resultados' folder and see the fragment of the video where the event happens. Indeed, the video is saved automatically seconds before the desired event. It can checked in the gif or in [resultados/2023-11-26 20:23:05.mp4](https://github.com/Yamilhb/yolo-class-contagion/blob/master/resultados/2023-11-26%2020%3A23%3A05.mp4) or [resultados/2023-11-26 20:23:24.mp4](https://github.com/Yamilhb/yolo-class-contagion/blob/master/resultados/2023-11-26%2020%3A23%3A24.mp4) (the file with the word *prueba*... is the whole test, and the other videos are the automatic savings).
+This new label will persist until the man goes beyond the limits of the image. In this case, we can go to the 'resultados' folder and see the fragment of the video where the event happens. Indeed, the video is saved automatically seconds before the desired event. It can be checked in the gif or in [resultados/2023-11-26 20:23:05.mp4](https://github.com/Yamilhb/yolo-class-contagion/blob/master/resultados/2023-11-26%2020%3A23%3A05.mp4) or [resultados/2023-11-26 20:23:24.mp4](https://github.com/Yamilhb/yolo-class-contagion/blob/master/resultados/2023-11-26%2020%3A23%3A24.mp4) (the file with the word *prueba*... is the whole test, and the other videos are the automatic savings).
 
 
