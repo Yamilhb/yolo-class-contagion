@@ -2,6 +2,7 @@
  <h1>Class Contagion</h1>
 </div>
 
+<br>
 
 [Class Contagion](https://github.com/Yamilhb/yolo-class-contagion) is an excercise with yolo that aims to explore the tracking capabilities of the model.
 
