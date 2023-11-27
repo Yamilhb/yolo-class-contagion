@@ -1,3 +1,4 @@
+<div align="center">
 # Class Contagion
 
 [Class Contagion](https://github.com/Yamilhb/yolo-class-contagion) is an excercise with yolo that aims to explore the tracking capabilities of the model.
