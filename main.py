@@ -37,7 +37,6 @@ def main():
     indi = None
 ###########
     while True:
-        #print(f'\nFRAME: {nframe}')
         print('\n\n'+'-+'*15,f'FRAME: {nframe}',f"   HORA: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         if (not grabando)and (tiempo_archivo>tiempo_reinicio_video):
             print('1------>',f'{nombre_archivo}.mp4','<------')
@@ -51,7 +50,6 @@ def main():
             print('2------>',nombre_archivo,'<------')
             print('222222:',os.listdir('resultados/'))
             out_archivo = cv.VideoWriter(f'resultados/{nombre_archivo}.mp4',fourcc,(1000/milisegundos),(frame_width,frame_height))
-#            out_archivo.write(frame) 
             tiempo_archivo = 0
             t_inicio = time.time()
             indi=1
@@ -61,16 +59,6 @@ def main():
             nombre_archivo = None
             tiempo_archivo = tiempo_reinicio_video+0.1
             grabando = False
-        # elif grabando:
-        #     print('3------>GRABANDO: ',nombre_archivo,'<------')
-        #     out_archivo.write(frame)
-            
-        #     if id_sospechoso is None:
-        #         out_archivo.release()
-        #         del(out_archivo)
-        #         nombre_archivo = None
-        #         tiempo_archivo = tiempo_reinicio_video+0.1
-        #         grabando = False
         elif tiempo_archivo<=tiempo_reinicio_video:
             tiempo_archivo = time.time()-t_inicio
         
@@ -80,7 +68,7 @@ def main():
         _, frame = video.read()
         results = model.track(frame, conf=0.6, save=False, show=False)
 
-        print('\n'+'-+'*15,f'FRAME: {nframe}')
+#        print('\n'+'-+'*15,f'FRAME: {nframe}')
                 
 
 
@@ -96,42 +84,32 @@ def main():
             for h in b:
                 
                annotator.box_label(h, f'Android -- fr {nframe}', color=(255, 0, 0))
-    
-            #print(f"   ATENTI, lista_humanos, r.boxes.id: {r.boxes.id}")
-
-
-            #print(f"\n\n  Atributos:\n----------\n   - ID: {r.boxes}")
             
             # Se detecta el evento?
             if cls_tg in r.boxes.cls:                
-                # Buscamos posición del sospechoso.
+                # Buscamos evento.
                 lista_tgs = ((r.boxes.cls == cls_tg).nonzero()).flatten()
-                # Localizamos el centroide de la target (Para después asociarlo al humano con centroide más cercano).
+                # Localizamos el centroide del evento target (Para después asociarlo al humano con centroide más cercano).
                 centroide_tg = r.boxes.xywh[lista_tgs][0][:2]
                 ntarget +=1
             
-            # El evento no se detecta en este frame pero sí en los anteriores (se está produciendo el evento).
+            # Condición auxiliar para no romper el flujo cuando el evento no se detecta en este frame pero sí en los anteriores (se está produciendo el evento).
             if ((cls_tg not in r.boxes.cls)and (ntarget>0)):
                 ntarget +=1
                 nnotarget +=1
             
-            # El evento termina de producirse: 
+            # Confirmamos que se produce el evento (se ha detectado en 3 frames cuasi-consecutivos): 
             #   - Se busca al causante del evento y se registra su id.
-            if (ntarget==3):
-                # print('TENEMOS MECHERO:\n'+'-'*15)
-                # print(f'  -  POSITION SUSPECT: {lista_tgs}')
-                # Fijamos el ID del sospechoso.
+            if (ntarget==3) and (id_sospechoso is None):
+                # Calculamos la distancia entre los humanos y el evento.
                 distancias_h_tg = np.array([[x[0],
                                     np.linalg.norm(centroide_tg-x[1][:2])]
                                       for x in zip(r.boxes.id[lista_humanos],r.boxes.xywh[lista_humanos])])
-#                distancias_h_tg_aux = np.array([[np.linalg.norm(centroide_tg-x[1][:2])]
-#                                      for x in zip(r.boxes.id[lista_humanos],r.boxes.xywh[lista_humanos])])
-#                print(f'  -  DISTANCIAS HUMANO/ACTO: {distancias_h_tg} -- {distancias_h_tg_aux}')
+                # Buscamos el ID del humano más cercano al evento.
                 posicion_minima = np.argmin(distancias_h_tg[:,1])
                 id_sospechoso = distancias_h_tg[posicion_minima][0]
-                print('CULPABLE EEEEEEEEEEEEEES: ', id_sospechoso, '--', r.boxes.cls[int(id_sospechoso)-1])
             
-            # El evento ya pasó, reseteo las variables que corresponde.
+            # Si el evento ya pasó, reseteo las variables que corresponde.
             if nnotarget>=3:
                 ntarget = 0
                 nnotarget = 0
@@ -139,20 +117,11 @@ def main():
                 centroide_tg = None
                 distancias_h_tg = None
                 posicion_minima = None
-                #id_sospechoso = None
 
             # Se busca al sospechoso y se graba la parte del video donde se captura el evento.
-            print('SSSSSSSOOOOOSSSSSS: ',id_sospechoso)
-            print('RRRRRRRRR BOOOOOOXESSSS: ',r.boxes.id )
             if id_sospechoso is not None:
                 if (r.boxes.id is not None)and (((r.boxes.id == id_sospechoso).sum())>0) and (0. in r.boxes.cls):
                     marca = 0
-                    # print('BUSCAMOS MECHERO:\n'+'-'*15)
-                    # print(f'  -  ID SUSPECT: {id_sospechoso}')
-                    # print(f'  -  TODOS LOS ID: {r.boxes.id}')
-                    # cajon_sospechoso = list(r.boxes.xyxy[((r.boxes.id == id_sospechoso).nonzero()).flatten()])
-                    # clase = r.boxes.cls[((r.boxes.id == id_sospechoso).nonzero()).flatten()]
-                    # print(f'  -  BOUND SUSPECT: {cajon_sospechoso}')
                     for h in b:
                         annotator.box_label(h, f'Contagion by a {r.names[int(cls_tg)]}',color = (0, 0, 255))
                     grabando = True
@@ -167,7 +136,7 @@ def main():
         
         out.write(frame)
         cv.imshow('YoL0v8',frame)
-        if cv.waitKey(milisegundos)& 0xFF==ord('q'): # El video está a 30 frames por segundo.
+        if cv.waitKey(milisegundos)& 0xFF==ord('q'): 
             break
 
     # RELEASE MEMORY
