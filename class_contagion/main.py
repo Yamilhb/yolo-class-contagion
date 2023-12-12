@@ -1,3 +1,9 @@
+from pathlib import Path
+import sys
+sys.path.append(Path(__file__).resolve().parent.parent)
+
+print(sys.path)
+
 import cv2 as cv
 from ultralytics import YOLO
 from ultralytics.utils.plotting import Annotator
@@ -6,6 +12,9 @@ import numpy as np
 import os
 from datetime import datetime
 import time
+
+from config.config import OUTPUT_DIR, MODEL_DIR
+from process.modulos import aux_saving
 # Permitamos a opencv a usar la GPU
 os.environ['OPENCV_DNN_OPENCL_ALLOW_ALL_DEVICES'] = '1'
 
@@ -20,11 +29,11 @@ def main():
     frame_width = int(video.get(cv.CAP_PROP_FRAME_WIDTH))
     frame_height = int(video.get(cv.CAP_PROP_FRAME_HEIGHT))
 
-    model = YOLO('yolov8n.pt')  # load an official model
+    model = YOLO(f'{MODEL_DIR}/yolov8n.pt')  # load an official model
     model.to('cuda')
 
     fourcc  = cv.VideoWriter_fourcc(*'MP4V') 
-    out = cv.VideoWriter(f'resultados/prueba{prueba}.mp4',fourcc,(1000/milisegundos),(frame_width,frame_height), True)
+    out = cv.VideoWriter(f'{OUTPUT_DIR}/prueba{prueba}.mp4',fourcc,(1000/milisegundos),(frame_width,frame_height), True)
 ###########    
     nframe = 0
     ntarget = 0
@@ -38,32 +47,14 @@ def main():
 ###########
     while True:
         print('\n\n'+'-+'*15,f'FRAME: {nframe}',f"   HORA: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        if (not grabando)and (tiempo_archivo>tiempo_reinicio_video):
-            print('1------>',f'{nombre_archivo}.mp4','<------')
-            print('111111:',os.listdir('resultados/'))
-            if f'{nombre_archivo}.mp4' in os.listdir('resultados/'):
-                if 'out_archivo' in locals() or 'out_archivo' in globals():
-                    out_archivo.release()
-                    del(out_archivo)
-                os.remove(f'resultados/{nombre_archivo}.mp4')
-            nombre_archivo = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            print('2------>',nombre_archivo,'<------')
-            print('222222:',os.listdir('resultados/'))
-            out_archivo = cv.VideoWriter(f'resultados/{nombre_archivo}.mp4',fourcc,(1000/milisegundos),(frame_width,frame_height))
-            tiempo_archivo = 0
-            t_inicio = time.time()
-            indi=1
-        elif grabando and (id_sospechoso is None) and indi==1:
-            out_archivo.release()
-            del(out_archivo)
-            nombre_archivo = None
-            tiempo_archivo = tiempo_reinicio_video+0.1
-            grabando = False
-        elif tiempo_archivo<=tiempo_reinicio_video:
-            tiempo_archivo = time.time()-t_inicio
-        
+
+        grabando,tiempo_archivo,nombre_archivo,indi, t_inicio = aux_saving(grabando,tiempo_archivo,tiempo_reinicio_video,nombre_archivo,\
+                                                                                    fourcc,milisegundos,frame_width,frame_height,\
+                                                                                id_sospechoso,indi,t_inicio)
+
         if 'out_archivo' in locals() or 'out_archivo' in globals():
-            out_archivo.write(frame) 
+            out_archivo.write(frame)
+
 
         _, frame = video.read()
         results = model.track(frame, conf=0.6, save=False, show=False)
