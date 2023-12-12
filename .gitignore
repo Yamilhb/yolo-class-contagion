@@ -7,3 +7,8 @@ resultados/*
 !resultados/2023-11-26\ 20:23:05.mp4
 !resultados/2023-11-26\ 20:23:24.mp4
 !resultados/gif20:23:24.gif
+
+# Cache
+#class_contagion/config/__pycache__/
+#class_contagion/process/__pycache__/
+__pycache__/
