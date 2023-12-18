@@ -13,8 +13,8 @@ import os
 from datetime import datetime
 import time
 
-from config.config import OUTPUT_DIR, MODEL_DIR
-from process.modulos import aux_saving
+from configuration.config import  OUTPUT_DIR, MODEL_DIR
+from process.modulos import aux_saving, event_association, out_archivo
 # Permitamos a opencv a usar la GPU
 os.environ['OPENCV_DNN_OPENCL_ALLOW_ALL_DEVICES'] = '1'
 
@@ -44,6 +44,9 @@ def main():
     t_inicio = time.time()
     nombre_archivo = None
     indi = None
+    marca = None
+#    del(out_archivo)
+
 ###########
     while True:
         print('\n\n'+'-+'*15,f'FRAME: {nframe}',f"   HORA: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
@@ -51,8 +54,11 @@ def main():
         grabando,tiempo_archivo,nombre_archivo,indi, t_inicio = aux_saving(grabando,tiempo_archivo,tiempo_reinicio_video,nombre_archivo,\
                                                                                     fourcc,milisegundos,frame_width,frame_height,\
                                                                                 id_sospechoso,indi,t_inicio)
+        
+        print(f"FUERA:  {'out_archivo' in locals() or 'out_archivo' in globals()}")
 
-        if 'out_archivo' in locals() or 'out_archivo' in globals():
+#        if ('out_archivo' in locals() or 'out_archivo' in globals()):
+        if out_archivo is not None:
             out_archivo.write(frame)
 
 
@@ -76,55 +82,59 @@ def main():
                 
                annotator.box_label(h, f'Android -- fr {nframe}', color=(255, 0, 0))
             
-            # Se detecta el evento?
-            if cls_tg in r.boxes.cls:                
-                # Buscamos evento.
-                lista_tgs = ((r.boxes.cls == cls_tg).nonzero()).flatten()
-                # Localizamos el centroide del evento target (Para después asociarlo al humano con centroide más cercano).
-                centroide_tg = r.boxes.xywh[lista_tgs][0][:2]
-                ntarget +=1
+            ntarget,nnotarget,id_sospechoso,lista_humanos, marca =\
+            event_association(cls_tg,r,
+                      ntarget,nnotarget,
+                      id_sospechoso,lista_humanos, marca, b, annotator, milisegundos)
+            # # Se detecta el evento?
+            # if cls_tg in r.boxes.cls:                
+            #     # Buscamos evento.
+            #     lista_tgs = ((r.boxes.cls == cls_tg).nonzero()).flatten()
+            #     # Localizamos el centroide del evento target (Para después asociarlo al humano con centroide más cercano).
+            #     centroide_tg = r.boxes.xywh[lista_tgs][0][:2]
+            #     ntarget +=1
             
-            # Condición auxiliar para no romper el flujo cuando el evento no se detecta en este frame pero sí en los anteriores (se está produciendo el evento).
-            if ((cls_tg not in r.boxes.cls)and (ntarget>0)):
-                ntarget +=1
-                nnotarget +=1
+            # # Condición auxiliar para no romper el flujo cuando el evento no se detecta en este frame pero sí en los anteriores (se está produciendo el evento).
+            # if ((cls_tg not in r.boxes.cls)and (ntarget>0)):
+            #     ntarget +=1
+            #     nnotarget +=1
             
-            # Confirmamos que se produce el evento (se ha detectado en 3 frames cuasi-consecutivos): 
-            #   - Se busca al causante del evento y se registra su id.
-            if (ntarget==3) and (id_sospechoso is None):
-                # Calculamos la distancia entre los humanos y el evento.
-                distancias_h_tg = np.array([[x[0],
-                                    np.linalg.norm(centroide_tg-x[1][:2])]
-                                      for x in zip(r.boxes.id[lista_humanos],r.boxes.xywh[lista_humanos])])
-                # Buscamos el ID del humano más cercano al evento.
-                posicion_minima = np.argmin(distancias_h_tg[:,1])
-                id_sospechoso = distancias_h_tg[posicion_minima][0]
+            # # Confirmamos que se produce el evento (se ha detectado en 3 frames cuasi-consecutivos): 
+            # #   - Se busca al causante del evento y se registra su id.
+            # if (ntarget==3) and (id_sospechoso is None):
+            #     # Calculamos la distancia entre los humanos y el evento.
+            #     distancias_h_tg = np.array([[x[0],
+            #                         np.linalg.norm(centroide_tg-x[1][:2])]
+            #                           for x in zip(r.boxes.id[lista_humanos],r.boxes.xywh[lista_humanos])])
+            #     # Buscamos el ID del humano más cercano al evento.
+            #     posicion_minima = np.argmin(distancias_h_tg[:,1])
+            #     id_sospechoso = distancias_h_tg[posicion_minima][0]
             
-            # Si el evento ya pasó, reseteo las variables que corresponde.
-            if nnotarget>=3:
-                ntarget = 0
-                nnotarget = 0
-                lista_tgs = None
-                centroide_tg = None
-                distancias_h_tg = None
-                posicion_minima = None
+            # # Si el evento ya pasó, reseteo las variables que corresponde.
+            # if nnotarget>=3:
+            #     ntarget = 0
+            #     nnotarget = 0
+            #     lista_tgs = None
+            #     centroide_tg = None
+            #     distancias_h_tg = None
+            #     posicion_minima = None
 
-            # Se busca al sospechoso y se graba la parte del video donde se captura el evento.
-            if id_sospechoso is not None:
-                if (r.boxes.id is not None)and (((r.boxes.id == id_sospechoso).sum())>0) and (0. in r.boxes.cls):
-                    marca = 0
-                    for h in b:
-                        annotator.box_label(h, f'Contagion by a {r.names[int(cls_tg)]}',color = (0, 0, 255))
-                    grabando = True
-                else:
-                    marca +=1
-                    if marca >= (1000//milisegundos): # 'marca' nos indica los frame que lleva fuera de imagen el suspect
-                        id_sospechoso = None # Si lleva más de 1 segundo, lo borramos.
+            # # Se busca al sospechoso y se graba la parte del video donde se captura el evento.
+            # if id_sospechoso is not None:
+            #     if (r.boxes.id is not None)and (((r.boxes.id == id_sospechoso).sum())>0) and (0. in r.boxes.cls):
+            #         marca = 0
+            #         for h in b:
+            #             annotator.box_label(h, f'Contagion by a {r.names[int(cls_tg)]}',color = (0, 0, 255))
+            #         grabando = True
+            #     else:
+            #         marca +=1
+            #         if marca >= (1000//milisegundos): # 'marca' nos indica los frame que lleva fuera de imagen el suspect
+            #             id_sospechoso = None # Si lleva más de 1 segundo, lo borramos.
  
         nframe += 1
         frame = annotator.result()
 
-        
+        print('FFFFFFFFF','\n',OUTPUT_DIR,'  ---   ',out)
         out.write(frame)
         cv.imshow('YoL0v8',frame)
         if cv.waitKey(milisegundos)& 0xFF==ord('q'): 
