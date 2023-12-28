@@ -49,7 +49,7 @@ def main():
 
 ###########
     while True:
-        print('\n\n'+'-+'*15,f'FRAME: {nframe}',f"   HORA: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+#        print('\n\n'+'-+'*15,f'FRAME: {nframe}',f"   HORA: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
         grabando,tiempo_archivo,nombre_archivo,indi, t_inicio = aux_saving(grabando,tiempo_archivo,tiempo_reinicio_video,nombre_archivo,\
                                                                                     fourcc,milisegundos,frame_width,frame_height,\
@@ -84,7 +84,6 @@ def main():
         nframe += 1
         frame = annotator.result()
 
-        print('FFFFFFFFF','\n',OUTPUT_DIR,'  ---   ',out)
         out.write(frame)
         cv.imshow('YoL0v8',frame)
         if cv.waitKey(milisegundos)& 0xFF==ord('q'): 
