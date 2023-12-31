@@ -1,30 +1,26 @@
-from pathlib import Path
-import sys
-#sys.path.append(Path(__file__).resolve().parent.parent)
 
-print(sys.path)
+# Librerías de sistema.
+# from pathlib import Path
+# import sys
+# import os
 
+# Librerías de imágenes.
 import cv2 as cv
 from ultralytics import YOLO
 from ultralytics.utils.plotting import Annotator
-import sys
-import numpy as np
-import os
-from datetime import datetime
+
+# Librerías misceláneas.
 import time
 
+# Librerías de la app.
 from configuration.config import  OUTPUT_DIR, MODEL_DIR
 from process.modulos import aux_saving, event_association, out_archivo
-# Permitamos a opencv a usar la GPU
-os.environ['OPENCV_DNN_OPENCL_ALLOW_ALL_DEVICES'] = '1'
 
-milisegundos = int(sys.argv[1])
-cls_tg = float(sys.argv[2])
-prueba = sys.argv[3]
-tiempo_reinicio_video = 3 # Segundos que tienen que transcurrir para que el video que captura el momento se reinicie si no ha capturado nada.
+def modelo(milisegundos, cls_tg, prueba, tiempo_reinicio_video):
 
+    print('ENTRE A LA FUNCIÓN')
 
-def main():
+    # Preparación del modelo.
     video = cv.VideoCapture(0)
     frame_width = int(video.get(cv.CAP_PROP_FRAME_WIDTH))
     frame_height = int(video.get(cv.CAP_PROP_FRAME_HEIGHT))
@@ -34,7 +30,8 @@ def main():
 
     fourcc  = cv.VideoWriter_fourcc(*'MP4V') 
     out = cv.VideoWriter(f'{OUTPUT_DIR}/prueba{prueba}.mp4',fourcc,(1000/milisegundos),(frame_width,frame_height), True)
-###########    
+
+    # Inicialización de parámetros.    
     nframe = 0
     ntarget = 0
     nnotarget = 0
@@ -45,10 +42,11 @@ def main():
     nombre_archivo = None
     indi = None
     marca = None
+    transmite = True
 #    del(out_archivo)
 
 ###########
-    while True:
+    while transmite:
 #        print('\n\n'+'-+'*15,f'FRAME: {nframe}',f"   HORA: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
         grabando,tiempo_archivo,nombre_archivo,indi, t_inicio = aux_saving(grabando,tiempo_archivo,tiempo_reinicio_video,nombre_archivo,\
@@ -59,7 +57,7 @@ def main():
             out_archivo.write(frame)
 
 
-        _, frame = video.read()
+        ret, frame = video.read()
         results = model.track(frame, conf=0.6, save=False, show=False)
 
 
@@ -84,10 +82,18 @@ def main():
         nframe += 1
         frame = annotator.result()
 
+
         out.write(frame)
         cv.imshow('YoL0v8',frame)
         if cv.waitKey(milisegundos)& 0xFF==ord('q'): 
             break
+
+        if ret:
+            print(f"ESTO: {len(cv.imencode('.jpg', frame))} :ES")
+            _, buffer = cv.imencode('.jpg', frame)
+            frame_bytes = (b'--frame\r\n'
+                           b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
+            yield frame_bytes
 
     # RELEASE MEMORY
     ################
@@ -95,5 +101,4 @@ def main():
     video.release()
     cv.destroyAllWindows()
 
-if __name__=='__main__':
-    main()
+#modelo(milisegundos, cls_tg, prueba, tiempo_reinicio_video)

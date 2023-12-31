@@ -106,3 +106,32 @@ def event_association(cls_tg,r,
                 id_sospechoso = None # Si lleva más de 1 segundo, lo borramos.
     
     return ntarget,nnotarget,id_sospechoso,lista_humanos, marca 
+
+
+# def frameando():
+
+# if out_archivo is not None:
+#     out_archivo.write(frame)
+
+
+# _, frame = video.read()
+# results = model.track(frame, conf=0.6, save=False, show=False)
+
+
+# for r in results:
+
+#     annotator = Annotator(frame)
+
+#     lista_humanos = ((r.boxes.cls == 0.).nonzero()).flatten()
+
+#     b = r.boxes.xyxy[lista_humanos]
+#     #c = r.boxes.cls[lista_humanos]
+
+#     for h in b:
+        
+#         annotator.box_label(h, f'Android -- fr {nframe}', color=(255, 0, 0))
+    
+#     ntarget,nnotarget,id_sospechoso,lista_humanos, marca =\
+#     event_association(cls_tg,r,
+#                 ntarget,nnotarget,
+#                 id_sospechoso,lista_humanos, marca, b, annotator, milisegundos)
