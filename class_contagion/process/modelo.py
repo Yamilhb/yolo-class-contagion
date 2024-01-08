@@ -84,7 +84,7 @@ def modelo(milisegundos, cls_tg, prueba, tiempo_reinicio_video):
 
 
         out.write(frame)
-        cv.imshow('YoL0v8',frame)
+#        cv.imshow('YoL0v8',frame)
 #        if cv.waitKey(milisegundos)& 0xFF==ord('q'): 
 #            break
 

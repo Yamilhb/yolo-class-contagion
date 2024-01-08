@@ -14,8 +14,8 @@ from datetime import datetime
 import time
 
 from fastapi import FastAPI
-from fastapi.responses import StreamingResponse
-import uvicorn
+from fastapi.responses import StreamingResponse, HTMLResponse
+
 
 
 from process.modelo import modelo
@@ -36,22 +36,42 @@ tiempo_reinicio_video = 3 # Segundos que tienen que transcurrir para que el vide
 # Para levantrar la aplicación: uvicorn main:app --reload
 app = FastAPI(title='Basic WebCam Test',
               description='Trying to deploy a webcam service')
+html = """
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>WebCam</title>
+    </head>
+    <body>
+        <h1>Streaming WebCam</h1>
+        <div>
+        Para empezar la transmisión ir al endpoint: <strong><a href='/webcam'>Webcam</a></strong>
+        </div>
+        <div>
+        Para detener la transmisión ir al endpoint: <strong><a href='/stop'>Stop</a></strong>
+        </div>
+ 
+    </body>
+</html>
+"""
 
 @app.get("/")
 async def index():
-    return "WELCOMEN"
+    return HTMLResponse(html)
 
 @app.get("/webcam")
 def webcam():
     # Devolver la transmisión de imágenes como un video.
     return StreamingResponse(modelo(milisegundos, cls_tg, prueba, tiempo_reinicio_video), media_type="multipart/x-mixed-replace; boundary=frame")
 
-@app.get("/detener")
-def detener():
+@app.get("/stop")
+def stop():
     # Detenemos la transmisión.
     global transmite
     transmite = False
     return {"mensaje": "Transmisión detenida"}
 
 if __name__=='__main__':
-    uvicorn.run(app, host="localhost", port=8001, log_level="debug")
+    import uvicorn
+    #uvicorn.run(app, host="localhost", port=8001)
+    #uvicorn.run(app, host="0.0.0.0", port=8001)
