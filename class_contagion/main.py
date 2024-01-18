@@ -1,22 +1,22 @@
-from pathlib import Path
-import sys
+#from pathlib import Path
+#import sys
 #sys.path.append(Path(__file__).resolve().parent.parent)
 
 #print(sys.path)
 
-import cv2 as cv
-from ultralytics import YOLO
-from ultralytics.utils.plotting import Annotator
+#import cv2 as cv
+#from ultralytics import YOLO
+#from ultralytics.utils.plotting import Annotator
 import sys
-import numpy as np
+#import numpy as np
 import os
 from datetime import datetime
-import time
+#import time
 
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse, HTMLResponse
 
-
+#python3 class_contagion/main.py 60 41. "$(date +'%Y-%m-%d %H:%M:%S')"
 
 from process.modelo import modelo
 
@@ -26,9 +26,12 @@ from process.modelo import modelo
 # Permitamos a opencv a usar la GPU
 os.environ['OPENCV_DNN_OPENCL_ALLOW_ALL_DEVICES'] = '1'
 
-milisegundos = int(sys.argv[1])
-cls_tg = float(sys.argv[2])
-prueba = sys.argv[3]
+# milisegundos = int(sys.argv[1])
+# cls_tg = float(sys.argv[2])
+# prueba = sys.argv[3]
+milisegundos = 60
+cls_tg = float(41.)
+prueba = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 tiempo_reinicio_video = 3 # Segundos que tienen que transcurrir para que el video que captura el momento se reinicie si no ha capturado nada.
 
 ##########################
@@ -74,4 +77,4 @@ def stop():
 if __name__=='__main__':
     import uvicorn
     #uvicorn.run(app, host="localhost", port=8001)
-    #uvicorn.run(app, host="0.0.0.0", port=8001)
+    uvicorn.run(app, host="0.0.0.0", port=8001)
