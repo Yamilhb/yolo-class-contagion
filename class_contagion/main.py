@@ -11,6 +11,7 @@ import sys
 #import numpy as np
 import os
 from datetime import datetime
+import torch
 #import time
 
 from fastapi import FastAPI
@@ -23,8 +24,18 @@ from process.modelo import modelo
 ##########################
 # PARAMETROS
 
-# Permitamos a opencv a usar la GPU
-os.environ['OPENCV_DNN_OPENCL_ALLOW_ALL_DEVICES'] = '1'
+
+# Verificar la disponibilidad de la GPU
+use_gpu = torch.cuda.is_available()
+
+if use_gpu:
+    # Configurar el modelo para usar GPU
+    os.environ['OPENCV_DNN_OPENCL_ALLOW_ALL_DEVICES'] = '1'
+    gpu = True
+else:
+    # Configurar el modelo para usar CPU
+    gpu = False
+
 
 # milisegundos = int(sys.argv[1])
 # cls_tg = float(sys.argv[2])
@@ -65,7 +76,7 @@ async def index():
 @app.get("/webcam")
 def webcam():
     # Devolver la transmisión de imágenes como un video.
-    return StreamingResponse(modelo(milisegundos, cls_tg, prueba, tiempo_reinicio_video), media_type="multipart/x-mixed-replace; boundary=frame")
+    return StreamingResponse(modelo(milisegundos, cls_tg, prueba, tiempo_reinicio_video,gpu), media_type="multipart/x-mixed-replace; boundary=frame")
 
 @app.get("/stop")
 def stop():
@@ -77,4 +88,6 @@ def stop():
 if __name__=='__main__':
     import uvicorn
     #uvicorn.run(app, host="localhost", port=8001)
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+    port = int(os.environ.get("PORT",8001)) # Capturo la variable de entorno con el puerto que ha sido asignado por railway
+#    port = 8001
+    uvicorn.run(app, host="0.0.0.0", port=port)

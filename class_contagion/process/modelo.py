@@ -16,7 +16,7 @@ import time
 from configuration.config import  OUTPUT_DIR, MODEL_DIR
 from process.modulos import aux_saving, event_association, out_archivo
 
-def modelo(milisegundos, cls_tg, prueba, tiempo_reinicio_video):
+def modelo(milisegundos, cls_tg, prueba, tiempo_reinicio_video,gpu):
 
     print('ENTRE A LA FUNCIÓN')
 
@@ -26,7 +26,7 @@ def modelo(milisegundos, cls_tg, prueba, tiempo_reinicio_video):
     frame_height = int(video.get(cv.CAP_PROP_FRAME_HEIGHT))
 
     model = YOLO(f'{MODEL_DIR}/yolov8n.pt')  # load an official model
-    model.to('cuda')
+
 
     fourcc  = cv.VideoWriter_fourcc(*'MP4V') 
     out = cv.VideoWriter(f'{OUTPUT_DIR}/prueba{prueba}.mp4',fourcc,(1000/milisegundos),(frame_width,frame_height), True)
@@ -58,7 +58,13 @@ def modelo(milisegundos, cls_tg, prueba, tiempo_reinicio_video):
 
 
         ret, frame = video.read()
-        results = model.track(frame, conf=0.6, save=False, show=False)
+        
+        if gpu:
+            model.to('cuda')
+            results = model.track(frame, conf=0.6, save=False, show=False)
+        else:
+            model.to('cpu')
+            results = model.track(frame, conf=0.6, save=False, show=False, device='cpu')
 
 
         for r in results:
