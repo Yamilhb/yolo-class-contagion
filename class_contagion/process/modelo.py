@@ -11,9 +11,10 @@ from ultralytics.utils.plotting import Annotator
 
 # Librerías misceláneas.
 import time
+import json
 
 # Librerías de la app.
-from configuration.config import  OUTPUT_DIR, MODEL_DIR
+from configuration.config import  OUTPUT_DIR, MODEL_DIR, CONFIG_DIR
 from process.modulos import aux_saving, event_association, out_archivo
 
 def modelo(milisegundos, cls_tg, prueba, tiempo_reinicio_video,gpu):
@@ -21,7 +22,16 @@ def modelo(milisegundos, cls_tg, prueba, tiempo_reinicio_video,gpu):
     print('ENTRE A LA FUNCIÓN')
 
     # Preparación del modelo.
-    video = cv.VideoCapture(0)
+#    video = cv.VideoCapture(0)
+    video = cv.VideoCapture(cv.CAP_FFMPEG)
+    #url_rtsp = f'rtsp://192.168.1.86/live/ch00_1'
+    with open(f"{CONFIG_DIR}/dircam.json","r") as text:
+        dircam = text.read()
+    ipcam = json.loads(dircam)
+    print(ipcam)
+    url_rtsp = f'rtsp://{ipcam["ip_ext"]}:{ipcam["port_ext"]}/live/ch00_1'
+    video.open(url_rtsp)
+
     frame_width = int(video.get(cv.CAP_PROP_FRAME_WIDTH))
     frame_height = int(video.get(cv.CAP_PROP_FRAME_HEIGHT))
 
