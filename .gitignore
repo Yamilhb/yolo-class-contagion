@@ -1,5 +1,6 @@
 # Environment
 entorno/*
+class_contagion/configuration/dircam.json
 
 # Results (videos saved)
 class_contagion/outputs/*
