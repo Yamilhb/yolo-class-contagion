@@ -1,6 +1,7 @@
 # Environment
 entorno/*
 class_contagion/configuration/dircam.json
+DockerfileBorrador
 
 # Results (videos saved)
 class_contagion/outputs/*
