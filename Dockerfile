@@ -19,6 +19,8 @@ RUN pip install -r requirements.txt
 # Dar permisos de ejecución
 #RUN chmod +x class_contagion/run.sh
 
+EXPOSE 3100
+
 # Instalamos los paquetes necesarios para que corra el opencv
 RUN apt-get update && apt-get install -y libgl1-mesa-glx
 
